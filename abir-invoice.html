@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Responsive Invoice with Totals & Summary</title>
+    <style>
+        /* Reset */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            margin: 20px;
+            color: #333;
+        }
+
+        .invoice-container {
+            max-width: 1200px;
+            margin: auto;
+            background: white;
+            padding: 25px 30px;
+            border-radius: 8px;
+            box-shadow: 0 3px 15px rgb(0 0 0 / 0.1);
+        }
+
+        /* Header: Logo + company info + QR code */
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .company-info-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1 1 300px;
+        }
+
+        .company-logo {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background: #fff;
+        }
+
+        .company-contact {
+            line-height: 1.3;
+        }
+
+        .company-contact strong {
+            display: block;
+            font-size: 1.3rem;
+            margin-bottom: 6px;
+            color: #8C2703;
+        }
+
+        .qr-code {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            flex: 0 0 auto;
+        }
+
+        /* Invoice company info and date */
+        .invoice-meta {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .invoice-meta>div {
+            flex: 1 1 280px;
+        }
+
+        .invoice-meta strong {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 1.1rem;
+            color: #222;
+        }
+
+        /* Responsive Table container */
+        .table-wrapper {
+            overflow-x: auto;
+            box-shadow: inset 0 0 10px rgb(0 0 0 / 0.05);
+            border-radius: 8px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 1100px;
+            /* minimum width to allow horizontal scroll on small devices */
+        }
+
+        thead {
+            background-color: #8C2703;
+            color: white;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+            white-space: nowrap;
+        }
+
+        tbody tr:hover {
+            background-color: #f1f7ff;
+        }
+
+        /* Balance and numeric columns right aligned */
+        td.balance,
+        th.balance,
+        td.quantity,
+        th.quantity,
+        td.price,
+        th.price,
+        td.debit,
+        th.debit,
+        td.credit,
+        th.credit {
+            text-align: right;
+        }
+
+        /* Total row style */
+        tbody tr.total-row {
+            font-weight: 700;
+            background-color: #e9f0ff;
+        }
+
+        /* Summary Section */
+        .summary {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #8C2703;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .summary-item {
+            flex: 1 1 30%;
+            background: #f0f7ff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            color: #591902;
+        }
+
+        /* Signatures */
+        .signatures {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 60px;
+        }
+
+        .signature-box {
+            flex: 1 1 40%;
+            border-top: 2px solid #333;
+            padding-top: 10px;
+            text-align: center;
+            font-weight: 600;
+            color: #555;
+        }
+
+        /* Smaller font on small devices */
+        @media (max-width: 600px) {
+            .company-contact strong {
+                font-size: 1.1rem;
+            }
+
+            th,
+            td {
+                padding: 8px 10px;
+            }
+
+            .summary {
+                flex-direction: column;
+            }
+
+            .summary-item {
+                flex: 1 1 100%;
+            }
+
+            .signatures {
+                flex-direction: column;
+                gap: 30px;
+            }
+
+            .signature-box {
+                flex: 1 1 100%;
+            }
+        }
+
+        /* PRINT STYLES */
+        @media print {
+
+            html,
+            body {
+                width: 100%;
+                height: auto;
+                margin: 0;
+                padding: 0;
+                overflow: visible !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .invoice-container {
+                max-width: 100% !important;
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
+
+            .table-wrapper {
+                overflow: visible !important;
+                height: auto !important;
+                max-height: none !important;
+                box-shadow: none !important;
+            }
+
+            table {
+                width: 100% !important;
+                min-width: unset !important;
+                table-layout: auto !important;
+            }
+
+            th,
+            td {
+                white-space: normal !important;
+                word-wrap: break-word;
+                font-size: 11px !important;
+            }
+
+            thead {
+                background-color: #8C2703 !important;
+                color: white !important;
+            }
+
+            tr,
+            td,
+            th {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            tbody {
+                page-break-inside: auto;
+            }
+
+            .summary,
+            .signatures {
+                page-break-inside: avoid;
+            }
+
+            .print-button {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="invoice-container">
+
+        <!-- Header -->
+        <div class="invoice-header">
+            <div class="company-info-left">
+                <img src="https://via.placeholder.com/80x80?text=Logo" alt="Company Logo" class="company-logo" />
+                <div class="company-contact">
+                    <strong>My Company Ltd.</strong>
+                    <div>email@mycompany.com</div>
+                    <div>+880 1234 567890</div>
+                    <div>123 Street, Dhaka, Bangladesh</div>
+                </div>
+            </div>
+            <div class="qr-code">
+                <!-- Dummy QR code SVG -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+                    <rect width="100" height="100" fill="#eee" />
+                    <rect x="10" y="10" width="20" height="20" fill="#333" />
+                    <rect x="40" y="10" width="10" height="10" fill="#333" />
+                    <rect x="60" y="10" width="30" height="30" fill="#333" />
+                    <rect x="10" y="40" width="10" height="10" fill="#333" />
+                    <rect x="30" y="40" width="30" height="30" fill="#333" />
+                    <rect x="10" y="70" width="20" height="20" fill="#333" />
+                    <rect x="50" y="70" width="40" height="10" fill="#333" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- Invoice Meta -->
+        <div class="invoice-meta">
+            <div>
+                <strong>Invoice For</strong>
+                <div><strong>Client Company</strong></div>
+                <div>client@example.com</div>
+                <div>+880 1987 654321</div>
+            </div>
+            <div>
+                <strong>Invoice Period</strong>
+                <div>From: 2025-06-01</div>
+                <div>To: 2025-06-29</div>
+            </div>
+        </div>
+
+        <!-- Responsive Table -->
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Payment Method</th>
+                        <th>Payment Through</th>
+                        <th>Transaction Number</th>
+                        <th>Vou Number</th>
+                        <th>Product Name</th>
+                        <th class="quantity">Quantity</th>
+                        <th class="price">Price</th>
+                        <th class="debit">Debit</th>
+                        <th class="credit">Credit</th>
+                        <th class="balance">Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 20 rows of dummy data -->
+                    <tr>
+                        <td>2025-06-01</td>
+                        <td>Bank</td>
+                        <td>BRAC Bank</td>
+                        <td>TXN12345</td>
+                        <td>VOU0001</td>
+                        <td>Product A</td>
+                        <td class="quantity">5</td>
+                        <td class="price">1000</td>
+                        <td class="debit">5000</td>
+                        <td class="credit">0</td>
+                        <td class="balance">5000</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-02</td>
+                        <td>Mobile Wallet</td>
+                        <td>bKash</td>
+                        <td>TXN98765</td>
+                        <td>VOU0002</td>
+                        <td>Product B</td>
+                        <td class="quantity">3</td>
+                        <td class="price">800</td>
+                        <td class="debit">2400</td>
+                        <td class="credit">0</td>
+                        <td class="balance">7400</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-03</td>
+                        <td>Cash</td>
+                        <td></td>
+                        <td></td>
+                        <td>VOU0003</td>
+                        <td>Product C</td>
+                        <td class="quantity">10</td>
+                        <td class="price">500</td>
+                        <td class="debit">5000</td>
+                        <td class="credit">0</td>
+                        <td class="balance">12400</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-04</td>
+                        <td>Cheque</td>
+                        <td>City Bank</td>
+                        <td>CHQ45678</td>
+                        <td>VOU0004</td>
+                        <td>Product D</td>
+                        <td class="quantity">2</td>
+                        <td class="price">1500</td>
+                        <td class="debit">3000</td>
+                        <td class="credit">0</td>
+                        <td class="balance">15400</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-05</td>
+                        <td>Bank</td>
+                        <td>DBBL</td>
+                        <td>TXN55555</td>
+                        <td>VOU0005</td>
+                        <td>Product E</td>
+                        <td class="quantity">1</td>
+                        <td class="price">2000</td>
+                        <td class="debit">0</td>
+                        <td class="credit">2000</td>
+                        <td class="balance">13400</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-06</td>
+                        <td>Mobile Wallet</td>
+                        <td>Rocket</td>
+                        <td>TXN66666</td>
+                        <td>VOU0006</td>
+                        <td>Product F</td>
+                        <td class="quantity">7</td>
+                        <td class="price">600</td>
+                        <td class="debit">4200</td>
+                        <td class="credit">0</td>
+                        <td class="balance">17600</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-07</td>
+                        <td>Cash</td>
+                        <td></td>
+                        <td></td>
+                        <td>VOU0007</td>
+                        <td>Product G</td>
+                        <td class="quantity">4</td>
+                        <td class="price">750</td>
+                        <td class="debit">3000</td>
+                        <td class="credit">0</td>
+                        <td class="balance">20600</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-08</td>
+                        <td>Cheque</td>
+                        <td>Standard Bank</td>
+                        <td>CHQ78901</td>
+                        <td>VOU0008</td>
+                        <td>Product H</td>
+                        <td class="quantity">6</td>
+                        <td class="price">1200</td>
+                        <td class="debit">7200</td>
+                        <td class="credit">0</td>
+                        <td class="balance">27800</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-09</td>
+                        <td>Bank</td>
+                        <td>HSBC</td>
+                        <td>TXN77777</td>
+                        <td>VOU0009</td>
+                        <td>Product I</td>
+                        <td class="quantity">8</td>
+                        <td class="price">900</td>
+                        <td class="debit">7200</td>
+                        <td class="credit">0</td>
+                        <td class="balance">35000</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-10</td>
+                        <td>Mobile Wallet</td>
+                        <td>Upay</td>
+                        <td>TXN88888</td>
+                        <td>VOU0010</td>
+                        <td>Product J</td>
+                        <td class="quantity">3</td>
+                        <td class="price">1100</td>
+                        <td class="debit">3300</td>
+                        <td class="credit">0</td>
+                        <td class="balance">38300</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-11</td>
+                        <td>Cash</td>
+                        <td></td>
+                        <td></td>
+                        <td>VOU0011</td>
+                        <td>Product K</td>
+                        <td class="quantity">9</td>
+                        <td class="price">450</td>
+                        <td class="debit">4050</td>
+                        <td class="credit">0</td>
+                        <td class="balance">42350</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-12</td>
+                        <td>Cheque</td>
+                        <td>Eastern Bank</td>
+                        <td>CHQ12389</td>
+                        <td>VOU0012</td>
+                        <td>Product L</td>
+                        <td class="quantity">1</td>
+                        <td class="price">2500</td>
+                        <td class="debit">2500</td>
+                        <td class="credit">0</td>
+                        <td class="balance">44850</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-13</td>
+                        <td>Bank</td>
+                        <td>City Bank</td>
+                        <td>TXN99999</td>
+                        <td>VOU0013</td>
+                        <td>Product M</td>
+                        <td class="quantity">5</td>
+                        <td class="price">1300</td>
+                        <td class="debit">6500</td>
+                        <td class="credit">0</td>
+                        <td class="balance">51350</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-14</td>
+                        <td>Mobile Wallet</td>
+                        <td>Nagad</td>
+                        <td>TXN11111</td>
+                        <td>VOU0014</td>
+                        <td>Product N</td>
+                        <td class="quantity">6</td>
+                        <td class="price">1000</td>
+                        <td class="debit">6000</td>
+                        <td class="credit">0</td>
+                        <td class="balance">57350</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-15</td>
+                        <td>Cash</td>
+                        <td></td>
+                        <td></td>
+                        <td>VOU0015</td>
+                        <td>Product O</td>
+                        <td class="quantity">2</td>
+                        <td class="price">900</td>
+                        <td class="debit">1800</td>
+                        <td class="credit">0</td>
+                        <td class="balance">59150</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-16</td>
+                        <td>Cheque</td>
+                        <td>National Bank</td>
+                        <td>CHQ45690</td>
+                        <td>VOU0016</td>
+                        <td>Product P</td>
+                        <td class="quantity">4</td>
+                        <td class="price">1400</td>
+                        <td class="debit">5600</td>
+                        <td class="credit">0</td>
+                        <td class="balance">64750</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-17</td>
+                        <td>Bank</td>
+                        <td>Sonali Bank</td>
+                        <td>TXN22222</td>
+                        <td>VOU0017</td>
+                        <td>Product Q</td>
+                        <td class="quantity">7</td>
+                        <td class="price">800</td>
+                        <td class="debit">5600</td>
+                        <td class="credit">0</td>
+                        <td class="balance">70350</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-18</td>
+                        <td>Mobile Wallet</td>
+                        <td>bKash</td>
+                        <td>TXN33333</td>
+                        <td>VOU0018</td>
+                        <td>Product R</td>
+                        <td class="quantity">3</td>
+                        <td class="price">950</td>
+                        <td class="debit">2850</td>
+                        <td class="credit">0</td>
+                        <td class="balance">73200</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-19</td>
+                        <td>Cash</td>
+                        <td></td>
+                        <td></td>
+                        <td>VOU0019</td>
+                        <td>Product S</td>
+                        <td class="quantity">10</td>
+                        <td class="price">700</td>
+                        <td class="debit">7000</td>
+                        <td class="credit">0</td>
+                        <td class="balance">80200</td>
+                    </tr>
+                    <tr>
+                        <td>2025-06-20</td>
+                        <td>Cheque</td>
+                        <td>Islami Bank</td>
+                        <td>CHQ78999</td>
+                        <td>VOU0020</td>
+                        <td>Product T</td>
+                        <td class="quantity">1</td>
+                        <td class="price">5000</td>
+                        <td class="debit">0</td>
+                        <td class="credit">5000</td>
+                        <td class="balance">75200</td>
+                    </tr>
+
+                    <!-- Totals Row -->
+                    <tr class="total-row">
+                        <td colspan="6">Total</td>
+                        <td class="quantity">97</td>
+                        <td class="price">--</td>
+                        <td class="debit">73650</td>
+                        <td class="credit">7000</td>
+                        <td class="balance">75200</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="summary">
+            <div class="summary-item">Total Debit: 73,650</div>
+            <div class="summary-item">Total Credit: 7,000</div>
+            <div class="summary-item">Closing Balance: 75,200</div>
+        </div>
+
+        <!-- Signature Section -->
+        <div class="signatures">
+            <div class="signature-box">Received By</div>
+            <div class="signature-box">Authorize By</div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>
